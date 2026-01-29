@@ -1,41 +1,86 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-  <meta charset="UTF-8">
-  <title>Malak Poster 3D</title>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>3D Mitochondrial Models</title>
   <script type="module" src="https://unpkg.com/@google/model-viewer/dist/model-viewer.min.js"></script>
   <style>
-    body { font-family: sans-serif; text-align: center; margin: 2rem; }
-    model-viewer { width: 600px; height: 600px; background-color: #f0f0f0; }
-    button { margin-top: 1rem; padding: 0.5rem 1rem; font-size: 16px; }
+    body { 
+      display: flex; 
+      flex-direction: column; 
+      align-items: center; 
+      font-family: sans-serif; 
+      margin: 20px;
+    }
+    model-viewer {
+      width: 90vw; 
+      max-width: 800px; 
+      height: 600px; 
+      margin-bottom: 20px;
+    }
+    button {
+      margin: 0 5px;
+      padding: 8px 12px;
+      font-size: 1rem;
+      cursor: pointer;
+    }
   </style>
 </head>
 <body>
+  <h1>Select a 3D Mitochondrial Model</h1>
 
-  <h2>0 Hour Recovery - Control</h2>
-  <model-viewer id="mv0" src="0h_control.glb" camera-controls auto-rotate environment-image="neutral"></model-viewer>
-  <button id="toggle0">Hide TMRE</button>
+  <model-viewer 
+    id="viewer" 
+    src="DMSO_72_1" 
+    alt="3D mitochondrial model" 
+    camera-controls 
+    auto-rotate 
+    shadow-intensity="1"
+    exposure="1"
+    touch-action="pan-y">
+  </model-viewer>
+
+  <div>
+    <button onclick="changeModel('DMSO_72_1.glb')">Model 3nm4</button>
+    <button onclick="changeModel('DMSO_72_1.glb')">Model 6nm1</button>
+    <button id="toggleTMRE">Hide TMRE</button>
+  </div>
 
   <script>
-    const viewer = document.getElementById('mv0');
-    const btn = document.getElementById('toggle0');
+    const viewer = document.getElementById('viewer');
+    let tmreVisible = true;
 
+    // Change model function
+    function changeModel(modelPath) {
+      viewer.src = modelPath;
+
+      // Wait for model to load, then reset TMRE visibility
+      viewer.addEventListener('load', () => {
+        const tmreObject = viewer.model?.scene.getObjectByName('TMRE_Surface'); // replace with exact Blender name
+        if (tmreObject) {
+          tmreObject.visible = tmreVisible;
+        }
+      }, { once: true });
+    }
+
+    // TMRE toggle button
+    document.getElementById('toggleTMRE').addEventListener('click', () => {
+      const tmreObject = viewer.model?.scene.getObjectByName('TMRE_Surface'); // replace with Blender name
+      if (!tmreObject) return;
+
+      tmreVisible = !tmreVisible;
+      tmreObject.visible = tmreVisible;
+      document.getElementById('toggleTMRE').textContent = tmreVisible ? 'Hide TMRE' : 'Show TMRE';
+    });
+
+    // Ensure TMRE is visible on initial load
     viewer.addEventListener('load', () => {
-      const tmreMeshName = 'TMRE_Surface'; // must match Blender name
-      const tmreObject = viewer.model.scene.getObjectByName(tmreMeshName);
-      if (!tmreObject) {
-        console.error('TMRE object not found! Check Blender name.');
-        return;
-      }
-
-      let visible = true;
-      btn.addEventListener('click', () => {
-        visible = !visible;
-        tmreObject.visible = visible;
-        btn.textContent = visible ? 'Hide TMRE' : 'Show TMRE';
-      });
+      const tmreObject = viewer.model?.scene.getObjectByName('TMRE_Surface'); // replace with Blender name
+      if (tmreObject) tmreObject.visible = tmreVisible;
     });
   </script>
-
 </body>
 </html>
+
+
