@@ -41,47 +41,64 @@
     touch-action="pan-y">
   </model-viewer>
 
-  <div>
-    <button onclick="changeModel('DMSO_72_1.glb')">Model 3nm4</button>
-    <button onclick="changeModel('DMSO_72_1.glb')">Model 6nm1</button>
-    <button id="toggleTMRE">Hide TMRE</button>
-  </div>
+ <div>
+  <!-- Model switching buttons -->
+  <button onclick="changeModel('DMSO_72_1.glb')">Model 3nm4</button>
+  <button onclick="changeModel('DMSO_72_1.glb')">Model 6nm1</button>
 
-  <script>
-    const viewer = document.getElementById('viewer');
-    let tmreVisible = true;
+  <!-- TMRE toggle button -->
+  <button id="toggleTMRE">Hide TMRE</button>
+</div>
 
-    // Change model function
-    function changeModel(modelPath) {
-      viewer.src = modelPath;
+<script>
+const viewer = document.getElementById('viewer');
+let tmreVisible = true;
 
-      // Wait for model to load, then reset TMRE visibility
-      viewer.addEventListener('load', () => {
-        const tmreObject = viewer.model?.scene.getObjectByName('TMRE_Surface'); // replace with exact Blender name
-        if (tmreObject) {
-          tmreObject.visible = tmreVisible;
-        }
-      }, { once: true });
+// Function to find TMRE object anywhere in the scene
+function findTMRE() {
+  let tmreObject = null;
+  viewer.model.scene.traverse(obj => {
+    if (obj.name === 'TMRE_Surface') { // Replace with exact Blender name
+      tmreObject = obj;
     }
+  });
+  return tmreObject;
+}
 
-    // TMRE toggle button
-    document.getElementById('toggleTMRE').addEventListener('click', () => {
-      const tmreObject = viewer.model?.scene.getObjectByName('TMRE_Surface'); // replace with Blender name
-      if (!tmreObject) return;
+// Change model function
+function changeModel(modelPath) {
+  viewer.src = modelPath;
 
-      tmreVisible = !tmreVisible;
+  // Wait for model to load, then reset TMRE visibility
+  viewer.addEventListener('load', () => {
+    const tmreObject = findTMRE();
+    if (tmreObject) {
       tmreObject.visible = tmreVisible;
-      document.getElementById('toggleTMRE').textContent = tmreVisible ? 'Hide TMRE' : 'Show TMRE';
-    });
+    }
+  }, { once: true });
+}
 
-    // Ensure TMRE is visible on initial load
-    viewer.addEventListener('load', () => {
-      const tmreObject = viewer.model?.scene.getObjectByName('TMRE_Surface'); // replace with Blender name
-      if (tmreObject) tmreObject.visible = tmreVisible;
-    });
-  </script>
-</body>
-</html>
+// TMRE toggle button
+document.getElementById('toggleTMRE').addEventListener('click', () => {
+  const tmreObject = findTMRE();
+  if (!tmreObject) {
+    console.warn('TMRE object not found! Check Blender mesh name.');
+    return;
+  }
+
+  tmreVisible = !tmreVisible;
+  tmreObject.visible = tmreVisible;
+  document.getElementById('toggleTMRE').textContent = tmreVisible ? 'Hide TMRE' : 'Show TMRE';
+});
+
+// Ensure TMRE is visible on initial load
+viewer.addEventListener('load', () => {
+  const tmreObject = findTMRE();
+  if (tmreObject) tmreObject.visible = tmreVisible;
+});
+</script>
+
+
 
 
 
