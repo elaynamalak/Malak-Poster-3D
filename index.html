@@ -55,6 +55,7 @@ const viewer = document.getElementById('viewer');
 const TMRE_MATERIAL_NAME = 'TMRE_Mat';
 let tmreVisible = true;
 let tmreMaterials = [];
+let originalAlphas = new Map(); // store original alpha per material
 
 // Acquire TMRE material after model loads
 function acquireTMREMaterials() {
@@ -64,13 +65,19 @@ function acquireTMREMaterials() {
   }
 
   tmreMaterials = [];
-  const mat = viewer.model.getMaterialByName(TMRE_MATERIAL_NAME);
-  if (mat) tmreMaterials.push(mat);
+  originalAlphas.clear();
 
-  applyTMREVisibility(); // apply current toggle state
+  const mat = viewer.model.getMaterialByName(TMRE_MATERIAL_NAME);
+  if (mat) {
+    tmreMaterials.push(mat);
+    // store original alpha
+    originalAlphas.set(mat, mat.pbrMetallicRoughness.baseColorFactor[3]);
+  }
+
+  applyTMREVisibility();
 }
 
-// Apply alpha = 0 when hiding, normal rendering when visible
+// Apply alpha = 0 when hiding, original alpha when showing
 function applyTMREVisibility() {
   tmreMaterials.forEach(mat => {
     const base = mat.pbrMetallicRoughness.baseColorFactor;
@@ -79,13 +86,14 @@ function applyTMREVisibility() {
       base[0],
       base[1],
       base[2],
-      tmreVisible ? 1 : 0 // alpha = 1 if visible, 0 if hidden
+      tmreVisible ? originalAlphas.get(mat) : 0
     ]);
   });
+
   viewer.requestUpdate();
 }
 
-// Run whenever a new model is loaded
+// When a new model is loaded
 viewer.addEventListener('load', () => {
   tmreMaterials = [];
   acquireTMREMaterials();
@@ -106,4 +114,5 @@ document.getElementById('toggleTMRE').addEventListener('click', () => {
 </script>
 </body>
 </html>
+
 
