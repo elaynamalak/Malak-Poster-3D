@@ -52,75 +52,58 @@
 
 <script>
 const viewer = document.getElementById('viewer');
-
 const TMRE_MATERIAL_NAME = 'TMRE_Mat';
-
 let tmreVisible = true;
-let tmreMaterial = null;
+let tmreMaterials = [];
 
-/**
- * Find the TMRE material after a model loads
- */
-function acquireTMREMaterial() {
+// Acquire TMRE material after model loads
+function acquireTMREMaterials() {
   if (!viewer.model) {
-    requestAnimationFrame(acquireTMREMaterial);
+    requestAnimationFrame(acquireTMREMaterials);
     return;
   }
 
-  tmreMaterial = viewer.model.getMaterialByName(TMRE_MATERIAL_NAME);
+  tmreMaterials = [];
+  const mat = viewer.model.getMaterialByName(TMRE_MATERIAL_NAME);
+  if (mat) tmreMaterials.push(mat);
 
-  if (!tmreMaterial) {
-    console.warn(`Material "${TMRE_MATERIAL_NAME}" not found in this model`);
-    return;
-  }
-
-  applyTMREVisibility();
+  applyTMREVisibility(); // apply current toggle state
 }
 
-/**
- * Apply current toggle state to the material
- */
+// Apply alpha = 0 when hiding, normal rendering when visible
 function applyTMREVisibility() {
-  if (!tmreMaterial) return;
-
-  if (tmreVisible) {
-    // Visible
-    tmreMaterial.setAlphaMode('OPAQUE');
-    tmreMaterial.pbrMetallicRoughness.setBaseColorFactor([1, 1, 1, 1]);
-  } else {
-    // Hidden
-    tmreMaterial.setAlphaMode('BLEND');
-    tmreMaterial.pbrMetallicRoughness.setBaseColorFactor([1, 1, 1, 0]);
-  }
-
+  tmreMaterials.forEach(mat => {
+    const base = mat.pbrMetallicRoughness.baseColorFactor;
+    mat.setAlphaMode('BLEND');
+    mat.pbrMetallicRoughness.setBaseColorFactor([
+      base[0],
+      base[1],
+      base[2],
+      tmreVisible ? 1 : 0 // alpha = 1 if visible, 0 if hidden
+    ]);
+  });
   viewer.requestUpdate();
 }
 
-/**
- * When any model finishes loading
- */
+// Run whenever a new model is loaded
 viewer.addEventListener('load', () => {
-  tmreMaterial = null;
-  acquireTMREMaterial();
+  tmreMaterials = [];
+  acquireTMREMaterials();
 });
 
-/**
- * Switch models
- */
+// Switch models
 function changeModel(path) {
   viewer.src = path;
 }
 
-/**
- * TMRE toggle button
- */
+// TMRE toggle button
 document.getElementById('toggleTMRE').addEventListener('click', () => {
   tmreVisible = !tmreVisible;
   applyTMREVisibility();
-
   document.getElementById('toggleTMRE').textContent =
     tmreVisible ? 'Hide TMRE' : 'Show TMRE';
 });
 </script>
 </body>
 </html>
+
