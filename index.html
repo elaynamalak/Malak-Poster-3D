@@ -53,70 +53,70 @@
 <script>
 const viewer = document.getElementById('viewer');
 
+const TMRE_MATERIAL_NAME = 'TMRE_Mat';
+
 let tmreVisible = true;
-let tmreMesh = null;
+let tmreMaterial = null;
 
 /**
- * Find and cache the TMRE mesh
- * Uses partial name matching to survive model-viewer renaming
+ * Find the TMRE material after a model loads
  */
-function cacheTMRE() {
-  if (!viewer.model) return;
-
-  tmreMesh = null;
-
-  viewer.model.scene.traverse(o => {
-    if (o.isMesh && o.name.includes('TMRE')) {
-      tmreMesh = o;
-    }
-  });
-
-  if (!tmreMesh) {
-    console.warn('TMRE mesh not found — check exported names');
+function acquireTMREMaterial() {
+  if (!viewer.model) {
+    requestAnimationFrame(acquireTMREMaterial);
+    return;
   }
+
+  tmreMaterial = viewer.model.getMaterialByName(TMRE_MATERIAL_NAME);
+
+  if (!tmreMaterial) {
+    console.warn(`Material "${TMRE_MATERIAL_NAME}" not found in this model`);
+    return;
+  }
+
+  applyTMREVisibility();
 }
 
 /**
- * Apply visibility + force redraw
+ * Apply current toggle state to the material
  */
-function updateTMREVisibility() {
-  if (!tmreMesh) return;
-  tmreMesh.visible = tmreVisible;
+function applyTMREVisibility() {
+  if (!tmreMaterial) return;
+
+  if (tmreVisible) {
+    // Visible
+    tmreMaterial.setAlphaMode('OPAQUE');
+    tmreMaterial.pbrMetallicRoughness.setBaseColorFactor([1, 1, 1, 1]);
+  } else {
+    // Hidden
+    tmreMaterial.setAlphaMode('BLEND');
+    tmreMaterial.pbrMetallicRoughness.setBaseColorFactor([1, 1, 1, 0]);
+  }
+
   viewer.requestUpdate();
 }
 
 /**
- * Initial model load
+ * When any model finishes loading
  */
 viewer.addEventListener('load', () => {
-  cacheTMRE();
-  updateTMREVisibility();
+  tmreMaterial = null;
+  acquireTMREMaterial();
 });
 
 /**
- * Model switching
+ * Switch models
  */
-function changeModel(modelPath) {
-  tmreMesh = null;
-  viewer.src = modelPath;
-
-  viewer.addEventListener('load', () => {
-    cacheTMRE();
-    updateTMREVisibility();
-  }, { once: true });
+function changeModel(path) {
+  viewer.src = path;
 }
 
 /**
  * TMRE toggle button
  */
 document.getElementById('toggleTMRE').addEventListener('click', () => {
-  if (!tmreMesh) {
-    console.warn('TMRE not ready yet');
-    return;
-  }
-
   tmreVisible = !tmreVisible;
-  updateTMREVisibility();
+  applyTMREVisibility();
 
   document.getElementById('toggleTMRE').textContent =
     tmreVisible ? 'Hide TMRE' : 'Show TMRE';
