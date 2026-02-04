@@ -5,7 +5,6 @@
 <meta name="viewport" content="width=device-width, initial-scale=1" />
 <title>3D Mitochondrial Morphology and Membrane Potential Models</title>
 
-<!-- Google Model Viewer -->
 <script type="module" src="https://unpkg.com/@google/model-viewer/dist/model-viewer.min.js"></script>
 
 <style>
@@ -45,7 +44,6 @@ button {
   color: #222;
 }
 
-/* ACTIVE BUTTON */
 button.active {
   background: #2563eb;
   color: #fff;
@@ -60,34 +58,28 @@ model-viewer {
   background-color: #f0f0f0;
   border-radius: 10px;
 }
-
-@media (max-width: 768px) {
-  model-viewer {
-    height: 400px;
-  }
-  button {
-    padding: 10px 14px;
-    font-size: 1.05rem;
-  }
-}
 </style>
 </head>
+
 <body>
 <h1>3D Mitochondrial Morphology and Membrane Potential Models</h1>
 
-<!-- Timepoint Buttons -->
 <div class="label">Timepoint</div>
 <div class="timepoint-buttons" id="timepoint-buttons"></div>
 
-<!-- Dose Buttons -->
 <div class="label">Dose</div>
 <div class="dose-buttons" id="dose-buttons"></div>
 
-<!-- 3D Model Viewer -->
-<model-viewer id="viewer" src="" alt="3D model" camera-controls auto-rotate shadow-intensity="1" exposure="1" touch-action="pan-y">
+<model-viewer
+  id="viewer"
+  src=""
+  alt="3D model"
+  camera-controls
+  auto-rotate
+  shadow-intensity="1"
+  exposure="1">
 </model-viewer>
 
-<!-- TMRE Toggle -->
 <button id="toggleTMRE">Hide TMRE</button>
 
 <script>
@@ -98,34 +90,35 @@ const doseButtonsDiv = document.getElementById('dose-buttons');
 const timepoints = {
   "0HR": [
     { name: "models/DMSO_0HR.glb", label: "DMSO" },
-    { name: "models/0HR_100cis_timelapse_z.glb", label: "100 µM" },
-    { name: "models/0HR_300cis_timelapse_z.glb", label: "300 µM" }
+    { name: "models/100_0HR.glb", label: "100 µM" },
+    { name: "models/300_0HR.glb", label: "300 µM" }
   ],
   "6HR": [
     { name: "models/DMSO_6HR.glb", label: "DMSO" },
-    { name: "models/6HR_100cis_timelapse_z.glb", label: "100 µM" },
-    { name: "models/6HR_300cis_timelapse_z.glb", label: "300 µM" }
+    { name: "models/100_6HR.glb", label: "100 µM" },
+    { name: "models/300_6HR.glb", label: "300 µM" }
   ],
   "24HR": [
     { name: "models/DMSO_24HR.glb", label: "DMSO" },
-    { name: "models/24HR_100cis_timelapse_z.glb", label: "100 µM" },
-    { name: "models/24HR_300cis_timelapse_z.glb", label: "300 µM" }
+    { name: "models/100_24HR.glb", label: "100 µM" },
+    { name: "models/300_24HR.glb", label: "300 µM" }
   ],
   "72HR": [
     { name: "models/DMSO_72HR.glb", label: "DMSO" },
-    { name: "models/72HR_100cis_timelapse_z.glb", label: "100 µM" },
-    { name: "models/72HR_300cis_timelapse_z.glb", label: "300 µM" }
+    { name: "models/100_72HR.glb", label: "100 µM" },
+    { name: "models/300_72HR.glb", label: "300 µM" }
   ],
   "96HR": [
     { name: "models/DMSO_96HR.glb", label: "DMSO" },
-    { name: "models/96HR_100cis_timelapse_z.glb", label: "100 µM" },
-    { name: "models/96HR_300cis_timelapse_z.glb", label: "300 µM" }
+    { name: "models/100_96HR.glb", label: "100 µM" },
+    { name: "models/300_96HR.glb", label: "300 µM" }
   ]
 };
 
 let currentTimepoint = "0HR";
+let currentDoseLabel = "DMSO";
 
-// TIMEPOINT BUTTONS
+// ---------- TIMEPOINT BUTTONS ----------
 Object.keys(timepoints).forEach(tp => {
   const btn = document.createElement('button');
   btn.textContent = tp;
@@ -138,21 +131,24 @@ Object.keys(timepoints).forEach(tp => {
   tpButtonsDiv.appendChild(btn);
 });
 
-// DOSE BUTTONS
+// ---------- DOSE BUTTONS ----------
 function renderDoseButtons() {
   doseButtonsDiv.innerHTML = '';
+
   timepoints[currentTimepoint].forEach((model, idx) => {
     const btn = document.createElement('button');
     btn.textContent = model.label;
     btn.onclick = () => {
       document.querySelectorAll('.dose-buttons button').forEach(b => b.classList.remove('active'));
       btn.classList.add('active');
+      currentDoseLabel = model.label;
       setModel(model.name);
     };
     if (idx === 0) btn.classList.add('active');
     doseButtonsDiv.appendChild(btn);
   });
 
+  currentDoseLabel = timepoints[currentTimepoint][0].label;
   setModel(timepoints[currentTimepoint][0].name);
 }
 
@@ -160,11 +156,21 @@ function setModel(src) {
   viewer.src = src;
 }
 
-// TMRE TOGGLE
+// ---------- TMRE LOGIC ----------
 const TMRE_MATERIAL_NAME = 'TMRE_Mat';
 let tmreVisible = true;
 let tmreMaterials = [];
-let originalAlphas = new Map();
+
+function getTMREAlpha(dose, timepoint) {
+  if (dose === "DMSO") return 0.25;
+
+  if (timepoint === "0HR") return 0.4;
+
+  if (dose === "100 µM") return 0.2;
+  if (dose === "300 µM") return 0.15;
+
+  return 0.25;
+}
 
 function acquireTMREMaterials() {
   if (!viewer.model) {
@@ -173,35 +179,28 @@ function acquireTMREMaterials() {
   }
 
   tmreMaterials = [];
-  originalAlphas.clear();
-
   const mat = viewer.model.getMaterialByName(TMRE_MATERIAL_NAME);
-  if (mat) {
-    tmreMaterials.push(mat);
-    originalAlphas.set(mat, mat.pbrMetallicRoughness.baseColorFactor[3]);
-  }
+  if (mat) tmreMaterials.push(mat);
 
   applyTMREVisibility();
 }
 
 function applyTMREVisibility() {
+  const alpha = getTMREAlpha(currentDoseLabel, currentTimepoint);
+
   tmreMaterials.forEach(mat => {
     const base = mat.pbrMetallicRoughness.baseColorFactor;
     mat.setAlphaMode('BLEND');
     mat.pbrMetallicRoughness.setBaseColorFactor([
-      base[0],
-      base[1],
-      base[2],
-      tmreVisible ? originalAlphas.get(mat) : 0
+      base[0], base[1], base[2],
+      tmreVisible ? alpha : 0
     ]);
   });
+
   viewer.requestUpdate();
 }
 
-viewer.addEventListener('load', () => {
-  tmreMaterials = [];
-  acquireTMREMaterials();
-});
+viewer.addEventListener('load', acquireTMREMaterials);
 
 document.getElementById('toggleTMRE').addEventListener('click', () => {
   tmreVisible = !tmreVisible;
@@ -210,10 +209,9 @@ document.getElementById('toggleTMRE').addEventListener('click', () => {
     tmreVisible ? 'Hide TMRE' : 'Show TMRE';
 });
 
-// INITIAL STATE
+// ---------- INITIAL STATE ----------
 document.querySelectorAll('.timepoint-buttons button')[0].classList.add('active');
 renderDoseButtons();
 </script>
 </body>
 </html>
-
