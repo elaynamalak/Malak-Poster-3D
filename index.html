@@ -172,7 +172,7 @@ const timepoints = {
     { name: "models/300_0HR.glb", label: "300 µM" }
   ],
   "6HR": [
-    { name: "models/DMSO_6HR.glb", label: "DMSO" },
+    { name: "models/DMSO_max.glb", label: "DMSO" },
     { name: "models/100_6HR.glb", label: "100 µM" },
     { name: "models/300_6HR.glb", label: "300 µM" }
   ],
@@ -235,12 +235,19 @@ let tmreVisible = true;
 let tmreMaterials = [];
 
 function getTMREAlpha(dose, timepoint) {
-  if (dose === "DMSO") return 0.25;
-  if (timepoint === "0HR") return 0.4;
-  if (dose === "100 µM") return 0.2;
-  if (dose === "300 µM") return 0.15;
-  return 0.25;
+  // DMSO always
+  if (dose === "DMSO") return 0.2;
+
+  // 0HR specific cases
+  if (timepoint === "0HR") {
+    if (dose === "100 µM") return 0.5;
+    if (dose === "300 µM") return 0.36;
+  }
+
+  // fallback for all other conditions
+  return 0.1;
 }
+
 
 function acquireTMREMaterials() {
   if (!viewer.model) {
@@ -282,3 +289,4 @@ renderDoseButtons();
 
 </body>
 </html>
+
