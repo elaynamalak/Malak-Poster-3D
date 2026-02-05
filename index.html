@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1" />
-<title>3D Mitochondrial Morphology and Membrane Potential Models</title>
+<title>3D Mitochondrial Morphology and Quantification</title>
 
 <script type="module" src="https://unpkg.com/@google/model-viewer/dist/model-viewer.min.js"></script>
 
@@ -19,6 +19,11 @@ body {
 
 h1 {
   margin-bottom: 15px;
+}
+
+/* CATEGORY BUTTONS */
+.category-buttons {
+  margin-bottom: 20px;
 }
 
 .label {
@@ -58,31 +63,104 @@ model-viewer {
   background-color: #f0f0f0;
   border-radius: 10px;
 }
+
+/* QUANTIFICATION */
+.quant-container {
+  max-width: 800px;
+  text-align: center;
+}
+
+.quant-container img {
+  width: 100%;
+  border-radius: 10px;
+  margin-bottom: 15px;
+}
+
+.quant-description {
+  background: #fff;
+  padding: 15px;
+  border-radius: 10px;
+  border: 1px solid #ddd;
+  text-align: left;
+}
 </style>
 </head>
 
 <body>
-<h1>3D Mitochondrial Morphology and Membrane Potential Models</h1>
 
-<div class="label">Timepoint</div>
-<div class="timepoint-buttons" id="timepoint-buttons"></div>
+<h1>3D Mitochondrial Morphology and Membrane Potential</h1>
 
-<div class="label">Dose</div>
-<div class="dose-buttons" id="dose-buttons"></div>
+<!-- CATEGORY SWITCH -->
+<div class="category-buttons">
+  <button id="tmreBtn">TMRE Models</button>
+  <button id="quantBtn">Quantification</button>
+</div>
 
-<model-viewer
-  id="viewer"
-  src=""
-  alt="3D model"
-  camera-controls
-  auto-rotate
-  shadow-intensity="1"
-  exposure="1">
-</model-viewer>
+<!-- ===================== -->
+<!-- TMRE MODELS SECTION -->
+<!-- ===================== -->
+<div id="tmre-section">
 
-<button id="toggleTMRE">Hide TMRE</button>
+  <div class="label">Timepoint</div>
+  <div class="timepoint-buttons" id="timepoint-buttons"></div>
+
+  <div class="label">Dose</div>
+  <div class="dose-buttons" id="dose-buttons"></div>
+
+  <model-viewer
+    id="viewer"
+    src=""
+    alt="3D model"
+    camera-controls
+    auto-rotate
+    shadow-intensity="1"
+    exposure="1">
+  </model-viewer>
+
+  <button id="toggleTMRE">Hide TMRE</button>
+</div>
+
+<!-- ===================== -->
+<!-- QUANTIFICATION SECTION -->
+<!-- ===================== -->
+<div id="quant-section" style="display:none;" class="quant-container">
+
+  <img src="images/quantification.png" alt="Quantification Results">
+
+  <div class="quant-description">
+    <h3>Quantification</h3>
+    <p>
+      Quantitative analysis of mitochondrial membrane potential
+      across treatment doses and timepoints normalized to control.
+    </p>
+  </div>
+
+</div>
 
 <script>
+/* ------------------ CATEGORY TOGGLE ------------------ */
+const tmreBtn = document.getElementById('tmreBtn');
+const quantBtn = document.getElementById('quantBtn');
+const tmreSection = document.getElementById('tmre-section');
+const quantSection = document.getElementById('quant-section');
+
+tmreBtn.onclick = () => {
+  tmreSection.style.display = "block";
+  quantSection.style.display = "none";
+  tmreBtn.classList.add("active");
+  quantBtn.classList.remove("active");
+};
+
+quantBtn.onclick = () => {
+  tmreSection.style.display = "none";
+  quantSection.style.display = "block";
+  quantBtn.classList.add("active");
+  tmreBtn.classList.remove("active");
+};
+
+tmreBtn.classList.add("active");
+
+/* ------------------ MODEL LOGIC ------------------ */
 const viewer = document.getElementById('viewer');
 const tpButtonsDiv = document.getElementById('timepoint-buttons');
 const doseButtonsDiv = document.getElementById('dose-buttons');
@@ -118,7 +196,7 @@ const timepoints = {
 let currentTimepoint = "0HR";
 let currentDoseLabel = "DMSO";
 
-// ---------- TIMEPOINT BUTTONS ----------
+/* TIMEPOINT BUTTONS */
 Object.keys(timepoints).forEach(tp => {
   const btn = document.createElement('button');
   btn.textContent = tp;
@@ -131,10 +209,9 @@ Object.keys(timepoints).forEach(tp => {
   tpButtonsDiv.appendChild(btn);
 });
 
-// ---------- DOSE BUTTONS ----------
+/* DOSE BUTTONS */
 function renderDoseButtons() {
   doseButtonsDiv.innerHTML = '';
-
   timepoints[currentTimepoint].forEach((model, idx) => {
     const btn = document.createElement('button');
     btn.textContent = model.label;
@@ -142,33 +219,26 @@ function renderDoseButtons() {
       document.querySelectorAll('.dose-buttons button').forEach(b => b.classList.remove('active'));
       btn.classList.add('active');
       currentDoseLabel = model.label;
-      setModel(model.name);
+      viewer.src = model.name;
     };
     if (idx === 0) btn.classList.add('active');
     doseButtonsDiv.appendChild(btn);
   });
 
   currentDoseLabel = timepoints[currentTimepoint][0].label;
-  setModel(timepoints[currentTimepoint][0].name);
+  viewer.src = timepoints[currentTimepoint][0].name;
 }
 
-function setModel(src) {
-  viewer.src = src;
-}
-
-// ---------- TMRE LOGIC ----------
+/* ------------------ TMRE VISIBILITY ------------------ */
 const TMRE_MATERIAL_NAME = 'TMRE_Mat';
 let tmreVisible = true;
 let tmreMaterials = [];
 
 function getTMREAlpha(dose, timepoint) {
   if (dose === "DMSO") return 0.25;
-
   if (timepoint === "0HR") return 0.4;
-
   if (dose === "100 µM") return 0.2;
   if (dose === "300 µM") return 0.15;
-
   return 0.25;
 }
 
@@ -177,17 +247,14 @@ function acquireTMREMaterials() {
     requestAnimationFrame(acquireTMREMaterials);
     return;
   }
-
   tmreMaterials = [];
   const mat = viewer.model.getMaterialByName(TMRE_MATERIAL_NAME);
   if (mat) tmreMaterials.push(mat);
-
   applyTMREVisibility();
 }
 
 function applyTMREVisibility() {
   const alpha = getTMREAlpha(currentDoseLabel, currentTimepoint);
-
   tmreMaterials.forEach(mat => {
     const base = mat.pbrMetallicRoughness.baseColorFactor;
     mat.setAlphaMode('BLEND');
@@ -196,22 +263,22 @@ function applyTMREVisibility() {
       tmreVisible ? alpha : 0
     ]);
   });
-
   viewer.requestUpdate();
 }
 
 viewer.addEventListener('load', acquireTMREMaterials);
 
-document.getElementById('toggleTMRE').addEventListener('click', () => {
+document.getElementById('toggleTMRE').onclick = () => {
   tmreVisible = !tmreVisible;
   applyTMREVisibility();
   document.getElementById('toggleTMRE').textContent =
     tmreVisible ? 'Hide TMRE' : 'Show TMRE';
-});
+};
 
-// ---------- INITIAL STATE ----------
+/* INITIAL STATE */
 document.querySelectorAll('.timepoint-buttons button')[0].classList.add('active');
 renderDoseButtons();
 </script>
+
 </body>
 </html>
