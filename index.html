@@ -54,17 +54,37 @@ button.active {
   color: #fff;
   border-color: #2563eb;
 }
-model-viewer {
+
+/* ---------- SQUARE MODEL VIEWER ---------- */
+.viewer-wrapper {
   width: 90vw;
   max-width: 500px;
-  aspect-ratio: 1 / 1;   /* makes it square */
-  height: auto;
+  aspect-ratio: 1 / 1;
+  position: relative;
   margin-bottom: 20px;
+}
+
+.viewer-wrapper model-viewer {
+  width: 100%;
+  height: 100%;
+  position: absolute;
+  inset: 0;
   background-color: #f0f0f0;
   border-radius: 10px;
 }
 
-/* QUANTIFICATION */
+/* ---------- TMRE BUTTON ---------- */
+.tmre-toggle-container {
+  display: flex;
+  justify-content: center;
+  margin-top: 10px;
+}
+
+.tmre-toggle-container button {
+  min-width: 140px;
+}
+
+/* ---------- QUANTIFICATION ---------- */
 .quant-container {
   max-width: 800px;
   text-align: center;
@@ -107,17 +127,21 @@ model-viewer {
   <div class="label">Dose</div>
   <div class="dose-buttons" id="dose-buttons"></div>
 
-  <model-viewer
-    id="viewer"
-    src=""
-    alt="3D model"
-    camera-controls
-    auto-rotate
-    shadow-intensity="1"
-    exposure="1">
-  </model-viewer>
+  <div class="viewer-wrapper">
+    <model-viewer
+      id="viewer"
+      src=""
+      alt="3D model"
+      camera-controls
+      auto-rotate
+      shadow-intensity="1"
+      exposure="1">
+    </model-viewer>
+  </div>
 
-  <button id="toggleTMRE">Hide TMRE</button>
+  <div class="tmre-toggle-container">
+    <button id="toggleTMRE">Hide TMRE</button>
+  </div>
 </div>
 
 <!-- ===================== -->
@@ -235,19 +259,13 @@ let tmreVisible = true;
 let tmreMaterials = [];
 
 function getTMREAlpha(dose, timepoint) {
-  // DMSO always
   if (dose === "DMSO") return 0.2;
-
-  // 0HR specific cases
   if (timepoint === "0HR") {
     if (dose === "100 µM") return 0.5;
     if (dose === "300 µM") return 0.36;
   }
-
-  // fallback for all other conditions
   return 0.1;
 }
-
 
 function acquireTMREMaterials() {
   if (!viewer.model) {
@@ -289,5 +307,3 @@ renderDoseButtons();
 
 </body>
 </html>
-
-
